@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>일상회복 - Daily Recovery Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Plus Jakarta Sans & Noto Sans KR) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mobbin: {
+                            bg: '#0A0E1A',
+                            card: '#131A2E',
+                            cardHover: '#18223C',
+                            border: '#1E2945',
+                            borderFocus: '#3B82F6',
+                            accent: '#2563EB',
+                            neonBlue: '#38BDF8',
+                            softText: '#94A3B8',
+                            darkText: '#F1F5F9',
+                            pill: '#101728',
+                            highlight: '#1D4ED8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Plus Jakarta Sans', sans-serif;
+            background-color: #0A0E1A;
+            color: #F1F5F9;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Ambient Glow Effect */
+        .ambient-glow {
+            position: absolute;
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.18) 0%, rgba(10, 14, 26, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: rgba(19, 26, 46, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Slider Animations for Question Steps */
+        .slide-container {
+            display: flex;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            width: 100%;
+        }
+
+        .slide-card {
+            flex: 0 0 100%;
+            width: 100%;
+            opacity: 0.25;
+            transform: scale(0.97);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            pointer-events: none;
+        }
+
+        .slide-card.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: #101728;
+            height: 8px;
+            border-radius: 4px;
+            border: 1px solid #1E2945;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #38BDF8;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+            transition: transform 0.15s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E2945;
+            border-radius: 9999px;
+        }
+
+        /* Option Selection Cards */
+        .select-option {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .select-option:hover {
+            border-color: #3B82F6;
+            background-color: rgba(37, 99, 235, 0.08);
+        }
+        .select-option.selected {
+            border-color: #38BDF8;
+            background: rgba(56, 189, 248, 0.12);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+        }
+
+        /* Custom Fade Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-mobbin-accent selection:text-white">
+
+    <div class="ambient-glow -top-20 -left-20"></div>
+    <div class="ambient-glow bottom-0 right-0" style="background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(10, 14, 26, 0) 70%);"></div>
+
+    <header class="w-full max-w-xl mx-auto px-5 pt-5 pb-3 flex items-center justify-between z-20">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="resetToHome()">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center text-white font-extrabold text-sm shadow-lg shadow-blue-500/20 border border-blue-400/30">
+                <i class="fa-solid fa-square-plus text-base"></i>
+            </div>
+            <div>
+                <span class="font-extrabold text-lg tracking-tight text-white block leading-none">일상<span class="text-mobbin-neonBlue">회복</span></span>
+                <span class="text-[10px] text-mobbin-softText font-semibold tracking-wider uppercase">DAILY RECOVERY FLOW</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Copy Source Code Button -->
+            <button onclick="copySourceCode()" title="소스 코드 전체 복사" class="text-xs font-semibold text-mobbin-neonBlue bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-code text-[11px]"></i>
+                <span id="copy-code-btn-text">코드 복사</span>
+            </button>
+
+            <button onclick="resetToHome()" class="text-xs font-semibold text-mobbin-softText hover:text-white bg-mobbin-pill border border-mobbin-border px-3.5 py-2 rounded-xl transition-all hover:border-mobbin-accent flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                <span>처음으로</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Toast Notification for Copying -->
+    <div id="toast-message" class="fixed top-16 left-1/2 transform -translate-x-1/2 bg-sky-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xl z-50 transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 border border-sky-300/30">
+        <i class="fa-solid fa-check"></i>
+        <span id="toast-text">클립보드에 복사되었습니다!</span>
+    </div>
+
+    <main class="w-full max-w-xl mx-auto px-4 flex-grow flex flex-col justify-center z-10 py-4">
+
+        <section id="intro-screen" class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 text-center border border-mobbin-border relative overflow-hidden">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-mobbin-neonBlue text-xs font-semibold">
+                <i class="fa-solid fa-shield-halved"></i> 청소년 맞춤 심리회복 진단
+            </div>
+
+            <div class="space-y-3">
+                <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight">
+                    마음이 답답하고 불안할 때,<br>
+                    <span class="bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">한 단계씩 찾아가는</span> 일상 회복
+                </h1>
+                <p class="text-xs sm:text-sm text-mobbin-softText leading-relaxed px-2">
+                    환승 이별, 친구 갈등, 학업 스트레스, 원인 모를 감정 기복까지.<br>
+                    한 화면에 질문 하나씩 차근차근 답하며 나의 감정을 진단하고 가장 효과적인 회복 솔루션을 확인해보세요.
+                </p>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="grid grid-cols-2 gap-2.5 text-left text-xs pt-2">
+                <div class="p-3.5 rounded-2xl bg-mobbin-pill border border-mobbin-border flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-xl bg-blue-500/20 text-mobbin-neonBlue flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-white text-xs">1화면 1질문</div>
+                        <div class="text-[10px] text-mobbin-softText">몰입형 슬라이드 인터페이스</div>
+                    </div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-mobbin-pill border border-mobbin-border flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-white text-xs">정밀 총점 매기기</div>
+                        <div class="text-[10px] text-mobbin-softText">조건별 회복 기대점수 분석</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="pt-2">
+                <button onclick="startFlow()" class="w-full py-4 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                    <span>회복 진단 시작하기</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+            
+            <p class="text-[11px] text-mobbin-softText/80">소요 시간: 약 1~2분 · 외부 서버로 개인정보가 전송되지 않습니다.</p>
+        </section>
+
+
+        <section id="flow-screen" class="hidden space-y-4">
+
+            <!-- Progress Header -->
+            <div class="glass-card p-4 rounded-2xl border border-mobbin-border space-y-2">
+                <div class="flex justify-between items-center text-xs font-bold">
+                    <span id="flow-step-text" class="text-mobbin-neonBlue tracking-wider">STEP 1 / 8</span>
+                    <span id="flow-title-text" class="text-mobbin-softText font-medium">주변 지원군</span>
+                </div>
+                <div class="w-full bg-mobbin-pill rounded-full h-2 overflow-hidden border border-mobbin-border/50">
+                    <div id="flow-progress" class="bg-gradient-to-r from-blue-600 to-sky-400 h-full rounded-full transition-all duration-300" style="width: 12.5%"></div>
+                </div>
+            </div>
+
+            <!-- Viewport Container -->
+            <div class="w-full overflow-hidden rounded-3xl relative">
+                <div id="slide-container" class="slide-container">
+
+                    <!-- QUESTION 1: Support Circle -->
+                    <div class="slide-card active">
+                        <div class="glass-card p-6 sm:p-7 rounded-3xl space-y-5 border border-mobbin-border">
+                            <div>
+                                <span class="text-[11px] font-extrabold text-mobbin-neonBlue uppercase tracking-wider block mb-1">Question 01</span>
+                                <h2 class="text-lg sm:text-xl font-bold text-white">오늘 나와 함께하거나 의지할 수 있는 대상은?</h2>
+                                <p class="text-xs text-mobbin-softText mt-1">복수 선택이 가능합니다. 해당되는 항목을 모두 선택하세요.</p>
+                            </div>
+
+                            <div class="space-y-2.5">
+                                <label class="select-option flex items-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="checkbox" name="q_support" value="friends" class="accent-sky-400 w-4 h-4 rounded" checked>
+                                    <span class="ml-3 text-xs sm:text-sm font-semibold text-mobbin-darkText"><i class="fa-solid fa-user-group mr-2 text-sky-400"></i>학교 / 학원 친구들</span>
+                                </label>
+                                <label class="select-option flex items-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="checkbox" name="q_support" value="parents" class="accent-sky-400 w-4 h-4 rounded">
+                                    <span class="ml-3 text-xs sm:text-sm font-semibold text-mobbin-darkText"><i class="fa-solid fa-house-user mr-2 text-sky-400"></i>부모님 / 보호자</span>
+                                </label>
+                                <label class="select-option flex items-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="checkbox" name="q_support" value="siblings" class="accent-sky-400 w-4 h-4 rounded">
+                                    <span class="ml-3 text-xs sm:text-sm font-semibold text-mobbin-darkText"><i class="fa-solid fa-people-arrows mr-2 text-sky-400"></i>형제 / 자매 / 사촌</span>
+                                </label>
+                                <label class="select-option flex items-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="checkbox" name="q_support" value="pets_online" class="accent-sky-400 w-4 h-4 rounded">
+                                    <span class="ml-3 text-xs sm:text-sm font-semibold text-mobbin-darkText"><i class="fa-solid fa-paw mr-2 text-sky-400"></i>반려동물 / 온라인 커뮤니티</span>
+                                </label>
+                                <label class="select-option flex items-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="checkbox" name="q_support" value="solo" class="accent-sky-400 w-4 h-4 rounded">
+                                    <span class="ml-3 text-xs sm:text-sm font-semibold text-mobbin-darkText"><i class="fa-solid fa-user mr-2 text-sky-400"></i>혼자 조용히 시간을 보내고 싶음</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUESTION 2: Time Availability -->
+                    <div class="slide-card">
+                        <div class="glass-card p-6 sm:p-7 rounded-3xl space-y-5 border border-mobbin-border">
+                            <div>
+                                <span class="text-[11px] font-extrabold text-mobbin-neonBlue uppercase tracking-wider block mb-1">Question 02</span>
+                                <h2 class="text-lg sm:text-xl font-bold text-white">오늘 사용할 수 있는 시간적 여유는?</h2>
+                                <p class="text-xs text-mobbin-softText mt-1">현재 일상 상황에 맞는 시간대를 선택하세요.</p>
+                            </div>
+
+                            <div class="space-y-2.5">
+                                <label class="select-option flex items-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_time" value="all_day" class="accent-sky-400 w-4 h-4">
+                                    <div class="ml-3">
+                                        <div class="text-xs sm:text-sm font-semibold text-white"><i class="fa-solid fa-calendar-day mr-1.5 text-sky-400"></i>하루 종일 여유 있음 (주말 / 방학 / 휴일)</div>
+                                        <div class="text-[10px] text-mobbin-softText">시간 제약 없이 충분히 자유로운 상태</div>
+                                    </div>
+                                </label>
+                                <label class="select-option flex items-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_time" value="after_school" class="accent-sky-400 w-4 h-4" checked>
+                                    <div class="ml-3">
+                                        <div class="text-xs sm:text-sm font-semibold text-white"><i class="fa-solid fa-clock mr-1.5 text-sky-400"></i>하교 후 1~3시간 정도</div>
+                                        <div class="text-[10px] text-mobbin-softText">방과 후나 학원 전후로 잠시 여유 가능</div>
+                                    </div>
+                                </label>
+                                <label class="select-option flex items-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_time" value="night" class="accent-sky-400 w-4 h-4">
+                                    <div class="ml-3">
+                                        <div class="text-xs sm:text-sm font-semibold text-white"><i class="fa-solid fa-moon mr-1.5 text-sky-400"></i>늦은 저녁 / 자기 전 짧은 시간</div>
+                                        <div class="text-[10px] text-mobbin-softText">집 또는 방 안에서 할 수 있는 간편 활동</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUESTION 3: Role in Interaction -->
+                    <div class="slide-card">
+                        <div class="glass-card p-6 sm:p-7 rounded-3xl space-y-5 border border-mobbin-border">
+                            <div>
+                                <span class="text-[11px] font-extrabold text-mobbin-neonBlue uppercase tracking-wider block mb-1">Question 03</span>
+                                <h2 class="text-lg sm:text-xl font-bold text-white">사람들과 만났을 때 원하는 나의 역할은?</h2>
+                                <p class="text-xs text-mobbin-softText mt-1">오늘 선호하는 상호작용 방식을 지정하세요.</p>
+                            </div>
+
+                            <div class="space-y-2.5">
+                                <label class="select-option flex items-start p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_role" value="talker" class="accent-sky-400 w-4 h-4 mt-0.5" checked>
+                                    <div class="ml-3">
+                                        <div class="text-xs sm:text-sm font-semibold text-white"><i class="fa-solid fa-comment-dots mr-1.5 text-sky-400"></i>내 감정을 적극적으로 털어놓는 화자</div>
+                                        <div class="text-[10px] text-mobbin-softText">솔직한 솔직담백 대화로 스트레스 해소</div>
+                                    </div>
+                                </label>
+                                <label class="select-option flex items-start p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_role" value="listener" class="accent-sky-400 w-4 h-4 mt-0.5">
+                                    <div class="ml-3">
+                                        <div class="text-xs sm:text-sm font-semibold text-white"><i class="fa-solid fa-headphones mr-1.5 text-sky-400"></i>타인의 대화를 조용히 듣는 청자</div>
+                                        <div class="text-[10px] text-mobbin-softText">내 문제에서 벗어나 상황에만 집중</div>
+                                    </div>
+                                </label>
+                                <label class="select-option flex items-start p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_role" value="action" class="accent-sky-400 w-4 h-4 mt-0.5">
+                                    <div class="ml-3">
+                                        <div class="text-xs sm:text-sm font-semibold text-white"><i class="fa-solid fa-bolt mr-1.5 text-sky-400"></i>말없이 액티비티에 몰입하는 참여자</div>
+                                        <div class="text-[10px] text-mobbin-softText">대화보다는 게임, 운동, 활동 위주 몰입</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="pt-1">
+                                <label class="block text-[11px] font-bold text-mobbin-softText mb-1.5">
+                                    <i class="fa-solid fa-pen-to-square text-sky-400 mr-1"></i> 주관식 역할 직접 입력 (선택)
+                                </label>
+                                <input type="text" id="input-custom-role" placeholder="예: 구경만 하면서 맛있는 디저트 먹는 사람" class="w-full p-3 bg-mobbin-pill border border-mobbin-border rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-sky-400">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUESTION 4: Budget -->
+                    <div class="slide-card">
+                        <div class="glass-card p-6 sm:p-7 rounded-3xl space-y-5 border border-mobbin-border">
+                            <div>
+                                <span class="text-[11px] font-extrabold text-mobbin-neonBlue uppercase tracking-wider block mb-1">Question 04</span>
+                                <h2 class="text-lg sm:text-xl font-bold text-white">오늘 사용 가능한 예산 범위는?</h2>
+                                <p class="text-xs text-mobbin-softText mt-1">예산에 최적화된 최적 활동을 계산합니다.</p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2.5">
+                                <label class="select-option text-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_budget" value="0" class="hidden">
+                                    <div class="font-bold text-xs sm:text-sm text-white"><i class="fa-solid fa-coins mr-1 text-sky-400"></i>0원 (무지출)</div>
+                                    <div class="text-[10px] text-mobbin-softText mt-0.5">비용 없는 힐링 활동</div>
+                                </label>
+                                <label class="select-option text-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_budget" value="5000" class="hidden" checked>
+                                    <div class="font-bold text-xs sm:text-sm text-white"><i class="fa-solid fa-wallet mr-1 text-sky-400"></i>5,000원 이하</div>
+                                    <div class="text-[10px] text-mobbin-softText mt-0.5">코인노래방 / 소소한 간식</div>
+                                </label>
+                                <label class="select-option text-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_budget" value="15000" class="hidden">
+                                    <div class="font-bold text-xs sm:text-sm text-white"><i class="fa-solid fa-credit-card mr-1 text-sky-400"></i>15,000원 이하</div>
+                                    <div class="text-[10px] text-mobbin-softText mt-0.5">외식 / 보드게임 / 오락실</div>
+                                </label>
+                                <label class="select-option text-center p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl cursor-pointer">
+                                    <input type="radio" name="q_budget" value="30000" class="hidden">
+                                    <div class="font-bold text-xs sm:text-sm text-white"><i class="fa-solid fa-gem mr-1 text-sky-400"></i>30,000원 이상</div>
+                                    <div class="text-[10px] text-mobbin-softText mt-0.5">가족 외식 / 풀코스 활동</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUESTION 5: Preferred Category -->
+                    <div class="slide-card">
+                        <div class="glass-card p-6 sm:p-7 rounded-3xl space-y-5 border border-mobbin-border">
+                            <div>
+                                <span class="text-[11px] font-extrabold text-mobbin-neonBlue uppercase tracking-wider block mb-1">Question 05</span>
+                                <h2 class="text-lg sm:text-xl font-bold text-white">선호하는 회복 활동 카테고리는?</h2>
+                                <p class="text-xs text-mobbin-softText mt-1">관심 있는 분야를 모두 선택하세요. (복수 선택)</p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2.5">
+                                <label class="select-option p-3 bg-mobbin-pill border border-mobbin-border rounded-xl cursor-pointer flex items-center space-x-2">
+                                    <input type="checkbox" name="q_category" value="active" class="accent-sky-400 w-4 h-4 rounded" checked>
+                                    <span class="text-xs font-semibold text-white"><i class="fa-solid fa-person-running mr-1 text-sky-400"></i>스포츠 / 운동</span>
+                                </label>
+                                <label class="select-option p-3 bg-mobbin-pill border border-mobbin-border rounded-xl cursor-pointer flex items-center space-x-2">
+                                    <input type="checkbox" name="q_category" value="food" class="accent-sky-400 w-4 h-4 rounded" checked>
+                                    <span class="text-xs font-semibold text-white"><i class="fa-solid fa-utensils mr-1 text-sky-400"></i>음식 / 미식</span>
+                                </label>
+                                <label class="select-option p-3 bg-mobbin-pill border border-mobbin-border rounded-xl cursor-pointer flex items-center space-x-2">
+                                    <input type="checkbox" name="q_category" value="entertainment" class="accent-sky-400 w-4 h-4 rounded" checked>
+                                    <span class="text-xs font-semibold text-white"><i class="fa-solid fa-music mr-1 text-sky-400"></i>노래방 / 오락</span>
+                                </label>
+                                <label class="select-option p-3 bg-mobbin-pill border border-mobbin-border rounded-xl cursor-pointer flex items-center space-x-2">
+                                    <input type="checkbox" name="q_category" value="creative" class="accent-sky-400 w-4 h-4 rounded">
+                                    <span class="text-xs font-semibold text-white"><i class="fa-solid fa-pen-nib mr-1 text-sky-400"></i>창작 / 기록</span>
+                                </label>
+                                <label class="select-option p-3 bg-mobbin-pill border border-mobbin-border rounded-xl cursor-pointer flex items-center space-x-2">
+                                    <input type="checkbox" name="q_category" value="nature" class="accent-sky-400 w-4 h-4 rounded">
+                                    <span class="text-xs font-semibold text-white"><i class="fa-solid fa-tree mr-1 text-sky-400"></i>산책 / 휴식</span>
+                                </label>
+                                <label class="select-option p-3 bg-mobbin-pill border border-mobbin-border rounded-xl cursor-pointer flex items-center space-x-2">
+                                    <input type="checkbox" name="q_category" value="detox" class="accent-sky-400 w-4 h-4 rounded">
+                                    <span class="text-xs font-semibold text-white"><i class="fa-solid fa-mobile-xmark mr-1 text-sky-400"></i>디지털 디톡스</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUESTION 6: Custom Activity & Quick Tags -->
+                    <div class="slide-card">
+                        <div class="glass-card p-6 sm:p-7 rounded-3xl space-y-5 border border-mobbin-border">
+                            <div>
+                                <span class="text-[11px] font-extrabold text-mobbin-neonBlue uppercase tracking-wider block mb-1">Question 06</span>
+                                <h2 class="text-lg sm:text-xl font-bold text-white">내가 실행해보고 싶은 나만의 회복 활동은?</h2>
+                                <p class="text-xs text-mobbin-softText mt-1">직접 작성하거나 추천 태그를 선택하세요 (결과 1순위 반영).</p>
+                            </div>
+
+                            <div>
+                                <input type="text" id="input-custom-activity" placeholder="예: 만화카페에서 과자 먹으며 최애 만화 정주행" class="w-full p-3.5 bg-mobbin-pill border border-mobbin-border rounded-2xl text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-400">
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <span class="text-[11px] font-bold text-mobbin-softText">추천 키워드 (클릭하여 입력):</span>
+                                <div class="flex flex-wrap gap-1.5 pt-1">
+                                    <button type="button" onclick="addTagToCustom('매운 음식 먹고 단 디저트 먹기')" class="text-[11px] px-2.5 py-1 bg-mobbin-pill border border-mobbin-border rounded-lg text-sky-300 hover:border-sky-400">매운 음식+디저트</button>
+                                    <button type="button" onclick="addTagToCustom('스마트폰 끄고 수면 모드')" class="text-[11px] px-2.5 py-1 bg-mobbin-pill border border-mobbin-border rounded-lg text-sky-300 hover:border-sky-400">디지털 차단 수면</button>
+                                    <button type="button" onclick="addTagToCustom('좋아하는 영상 연속 정주행')" class="text-[11px] px-2.5 py-1 bg-mobbin-pill border border-mobbin-border rounded-lg text-sky-300 hover:border-sky-400">영상 몰아보기</button>
+                                    <button type="button" onclick="addTagToCustom('소리 지르며 스트레스 발산')" class="text-[11px] px-2.5 py-1 bg-mobbin-pill border border-mobbin-border rounded-lg text-sky-300 hover:border-sky-400">고함/소리 발산</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUESTION 7: Emotion Sliders -->
+                    <div class="slide-card">
+                        <div class="glass-card p-6 sm:p-7 rounded-3xl space-y-5 border border-mobbin-border">
+                            <div>
+                                <span class="text-[11px] font-extrabold text-mobbin-neonBlue uppercase tracking-wider block mb-1">Question 07</span>
+                                <h2 class="text-lg sm:text-xl font-bold text-white">현재 나의 감정 상태 측정</h2>
+                                <p class="text-xs text-mobbin-softText mt-1">슬라이더를 움직여 현재 감정의 크기를 조절하세요.</p>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="p-3 bg-mobbin-pill rounded-2xl border border-mobbin-border">
+                                    <div class="flex justify-between items-center text-xs font-bold mb-1">
+                                        <span class="text-red-400"><i class="fa-solid fa-fire-flame-curved mr-1"></i> 분노 / 배신감</span>
+                                        <span id="slider-anger-val" class="text-sky-300">60점</span>
+                                    </div>
+                                    <input type="range" id="slider-anger" min="0" max="100" value="60" class="w-full" oninput="updateEmotion('anger', this.value)">
+                                </div>
+
+                                <div class="p-3 bg-mobbin-pill rounded-2xl border border-mobbin-border">
+                                    <div class="flex justify-between items-center text-xs font-bold mb-1">
+                                        <span class="text-blue-400"><i class="fa-solid fa-cloud-showers-heavy mr-1"></i> 슬픔 / 자존감 저하</span>
+                                        <span id="slider-sadness-val" class="text-sky-300">70점</span>
+                                    </div>
+                                    <input type="range" id="slider-sadness" min="0" max="100" value="70" class="w-full" oninput="updateEmotion('sadness', this.value)">
+                                </div>
+
+                                <div class="p-3 bg-mobbin-pill rounded-2xl border border-mobbin-border">
+                                    <div class="flex justify-between items-center text-xs font-bold mb-1">
+                                        <span class="text-purple-400"><i class="fa-solid fa-circle-dot mr-1"></i> 공허함 / 무기력</span>
+                                        <span id="slider-emptiness-val" class="text-sky-300">50점</span>
+                                    </div>
+                                    <input type="range" id="slider-emptiness" min="0" max="100" value="50" class="w-full" oninput="updateEmotion('emptiness', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QUESTION 8: Personal Emotion Note -->
+                    <div class="slide-card">
+                        <div class="glass-card p-6 sm:p-7 rounded-3xl space-y-5 border border-mobbin-border">
+                            <div>
+                                <span class="text-[11px] font-extrabold text-mobbin-neonBlue uppercase tracking-wider block mb-1">Question 08 (Final)</span>
+                                <h2 class="text-lg sm:text-xl font-bold text-white">마지막으로, 오늘 내 마음 상태를 한 줄로 요약하자면?</h2>
+                                <p class="text-xs text-mobbin-softText mt-1">마음 속 속상한 솔직한 심정을 글로 남겨보세요.</p>
+                            </div>
+
+                            <div>
+                                <input type="text" id="input-emotion-note" placeholder="예: 많이 속상하지만, 나 자신을 위해서 툭털어 내겠다!" class="w-full p-4 bg-mobbin-pill border border-mobbin-border rounded-2xl text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-400">
+                            </div>
+
+                            <div class="p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-xs text-mobbin-softText">
+                                <i class="fa-solid fa-circle-info text-mobbin-neonBlue mr-1"></i> 진단 완료 버튼을 누르면 입력된 모든 데이터를 기반으로 <b class="text-white">맞춤 일상회복 리포트</b>가 자동 산출됩니다.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Navigation Controls -->
+            <div class="flex justify-between items-center pt-2">
+                <button id="btn-flow-prev" onclick="prevFlowStep()" class="px-5 py-3 rounded-2xl bg-mobbin-pill border border-mobbin-border text-mobbin-softText font-semibold text-xs hover:text-white hover:border-mobbin-accent transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                    <span>이전</span>
+                </button>
+
+                <div class="text-[11px] text-mobbin-softText hidden sm:block">
+                    키보드 <kbd class="px-1.5 py-0.5 bg-mobbin-pill rounded border border-mobbin-border text-white">←</kbd> <kbd class="px-1.5 py-0.5 bg-mobbin-pill rounded border border-mobbin-border text-white">→</kbd> 또는 <kbd class="px-1.5 py-0.5 bg-mobbin-pill rounded border border-mobbin-border text-white">Enter</kbd>
+                </div>
+
+                <button id="btn-flow-next" onclick="nextFlowStep()" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-extrabold text-xs shadow-lg shadow-blue-500/20 transition-all flex items-center gap-1.5">
+                    <span id="btn-next-text">다음</span>
+                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </button>
+            </div>
+
+        </section>
+
+
+        <section id="report-screen" class="hidden space-y-5 fade-in">
+
+            <!-- Result Hero Card -->
+            <div class="glass-card p-6 sm:p-7 rounded-3xl border border-mobbin-border bg-gradient-to-b from-blue-900/30 via-mobbin-card to-mobbin-card text-center relative overflow-hidden space-y-4">
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-400/10 border border-sky-400/30 text-sky-300 rounded-full text-xs font-bold">
+                    <i class="fa-solid fa-square-poll-vertical"></i> 맞춤 일상회복 분석 리포트
+                </div>
+
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-black text-white">오늘을 위한 <br><span class="bg-gradient-to-r from-sky-300 to-blue-400 bg-clip-text text-transparent">최적 회복 솔루션</span></h2>
+                    <p class="text-xs text-mobbin-softText mt-1">입력된 8가지 조건 데이터를 종합 분석하였습니다.</p>
+                </div>
+
+                <!-- Total Score Box -->
+                <div class="p-4 bg-mobbin-pill border border-mobbin-border rounded-2xl max-w-xs mx-auto space-y-1">
+                    <div class="text-[11px] font-semibold text-mobbin-softText">예상 일상 회복 시너지 총점</div>
+                    <div id="report-total-score" class="text-4xl font-black text-mobbin-neonBlue">95점</div>
+                    <div class="text-[10px] text-sky-400/80">활동 실행 시 기분 전환 기대 수치</div>
+                </div>
+            </div>
+
+            <!-- User Emotion Note Card -->
+            <div id="report-user-note-card" class="hidden glass-card p-4 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-xs flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-xl bg-sky-400/20 text-sky-300 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    <i class="fa-solid fa-quote-left"></i>
+                </div>
+                <div>
+                    <div class="font-bold text-sky-300">오늘 기록한 내 마음 한 줄:</div>
+                    <div id="report-user-note-text" class="text-white italic mt-0.5 font-medium"></div>
+                </div>
+            </div>
+
+            <!-- Customized Mindset Guide -->
+            <div class="glass-card p-5 rounded-2xl border border-mobbin-border space-y-2">
+                <div class="text-xs font-bold text-mobbin-neonBlue flex items-center gap-1.5">
+                    <i class="fa-solid fa-heart-pulse"></i> 청소년 마음 가이드
+                </div>
+                <p id="report-comfort-msg" class="text-xs sm:text-sm text-mobbin-darkText leading-relaxed">
+                    상처받은 순간에는 자존감이 낮아지기 쉽지만 절대로 본인의 잘못이 아닙니다. 주변의 지원군과 작고 실천하기 쉬운 일상 활동부터 시작해보세요.
+                </p>
+            </div>
+
+            <!-- TOP 4 Recovery Activities List -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-center px-1">
+                    <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-mobbin-neonBlue"></i> 추천 회복 활동 TOP 4
+                    </h3>
+                    <span class="text-[10px] text-mobbin-softText">주관식 원픽 우선 반영</span>
+                </div>
+
+                <div id="report-activities-list" class="space-y-3">
+                    <!-- Dynamic Activity Cards Injected via JS -->
+                </div>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="pt-2 grid grid-cols-2 gap-3">
+                <button onclick="resetToHome()" class="py-3.5 bg-mobbin-pill border border-mobbin-border hover:border-mobbin-accent text-white font-bold rounded-2xl text-xs transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left"></i> 다시 진단하기
+                </button>
+                <button onclick="copyShareLink()" class="py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 text-white font-bold rounded-2xl text-xs shadow-lg shadow-blue-500/20 hover:opacity-90 transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-share-nodes"></i> 결과 공유하기
+                </button>
+            </div>
+
+            <div class="text-center pt-1">
+                <button onclick="copySourceCode()" class="text-[11px] text-mobbin-softText hover:text-mobbin-neonBlue transition-colors inline-flex items-center gap-1">
+                    <i class="fa-solid fa-file-code"></i> HTML 소스 코드 복사하기
+                </button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer class="w-full max-w-xl mx-auto px-5 py-4 text-center text-[10px] text-mobbin-softText/60 border-t border-mobbin-border/40 z-10">
+        일상회복 (Daily Recovery) · Mobbin-Style Interface · 청소년상담전화 1388
+    </footer>
+
+    <script>
+        // State Variables
+        let currentFlowStep = 1;
+        const totalFlowSteps = 8;
+
+        const emotions = {
+            anger: 60,
+            sadness: 70,
+            emptiness: 50
+        };
+
+        // Standard Activities Database (Icon fonts instead of emojis)
+        const activityDB = [
+            {
+                id: 'karaoke',
+                title: '스트레스 해소 코인노래방',
+                iconClass: 'fa-solid fa-microphone',
+                category: 'entertainment',
+                cost: 5000,
+                desc: '가슴 답답함과 분노가 느껴질 때 목청껏 노래 부르며 에너지를 발산하기',
+                tag: '#분노발산 #가슴뻥뚫림'
+            },
+            {
+                id: 'family_drive',
+                title: '보호자 / 가족과의 맛있는 외식',
+                iconClass: 'fa-solid fa-car',
+                category: 'food',
+                cost: 30000,
+                desc: '든든한 울타리 안에서 말없이 맛있는 음식과 함께 편안한 휴식 취하기',
+                tag: '#가족위로 #안정감확복'
+            },
+            {
+                id: 'spicy_food',
+                title: '매운 음식으로 땀 흘리며 스트레스 날리기',
+                iconClass: 'fa-solid fa-fire',
+                category: 'food',
+                cost: 15000,
+                desc: '미각 자극을 통해 엔돌핀 분비를 촉진하고 기분을 전환하는 활동',
+                tag: '#엔돌핀분비 #기분전환'
+            },
+            {
+                id: 'sports_sweat',
+                title: '구기 종목 or 달리기로 땀 흘리기',
+                iconClass: 'fa-solid fa-basketball',
+                category: 'active',
+                cost: 0,
+                desc: '몸을 신나게 움직여 스트레스 호르몬 수치를 떨어뜨리고 신체적 활력 되찾기',
+                tag: '#신체운동 #생각비우기'
+            },
+            {
+                id: 'walk_playlist',
+                title: '좋아하는 음악을 들으며 30분 산책',
+                iconClass: 'fa-solid fa-headphones-simple',
+                category: 'nature',
+                cost: 0,
+                desc: '햇빛을 쬐며 일상의 리듬을 정돈하고 세로토닌 합성을 돕는 가벼운 걸음',
+                tag: '#세로토닌 #혼자만의시간'
+            },
+            {
+                id: 'doodle_journal',
+                title: '마음 속 감정을 적고 찢어버리는 비밀 일기',
+                iconClass: 'fa-solid fa-file-pen',
+                category: 'creative',
+                cost: 0,
+                desc: '속상했던 상황을 종이에 모두 적어 내려간 후 잘게 찢어 버리기',
+                tag: '#감정표출 #비밀일기'
+            },
+            {
+                id: 'arcade_game',
+                title: '오락실 or 보드게임 몰입 플레이',
+                iconClass: 'fa-solid fa-gamepad',
+                category: 'entertainment',
+                cost: 15000,
+                desc: '순발력과 몰입이 필요한 유쾌한 오락 활동을 통해 고민 스위치 OFF하기',
+                tag: '#집중력지환 #생각스위치OFF'
+            },
+            {
+                id: 'detox_sleep',
+                title: '스마트폰 차단 및 수면 디톡스',
+                iconClass: 'fa-solid fa-bed',
+                category: 'detox',
+                cost: 0,
+                desc: 'SNS 확인을 중단하고 온전히 몸과 마음이 쉬어갈 수 있도록 충분히 숙면하기',
+                tag: '#스마트폰차단 #충분한휴식'
+            }
+        ];
+
+        // Setup Option Selection Styling
+        document.addEventListener('DOMContentLoaded', () => {
+            setupOptionSelectionEvents();
+            setupKeyboardNavigation();
+        });
+
+        function setupOptionSelectionEvents() {
+            const options = document.querySelectorAll('.select-option');
+            options.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    const input = opt.querySelector('input');
+                    if (input) {
+                        if (input.type === 'radio') {
+                            const name = input.name;
+                            document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                                const parent = r.closest('.select-option');
+                                if (parent) parent.classList.remove('selected');
+                            });
+                            opt.classList.add('selected');
+                        } else if (input.type === 'checkbox') {
+                            if (input.checked) {
+                                opt.classList.add('selected');
+                            } else {
+                                opt.classList.remove('selected');
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        // Keyboard navigation binding
+        function setupKeyboardNavigation() {
+            document.addEventListener('keydown', (e) => {
+                const flowScreen = document.getElementById('flow-screen');
+                if (flowScreen.classList.contains('hidden')) return;
+
+                if (e.key === 'ArrowRight' || e.key === 'Enter') {
+                    nextFlowStep();
+                } else if (e.key === 'ArrowLeft') {
+                    prevFlowStep();
+                }
+            });
+        }
+
+        function startFlow() {
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('flow-screen').classList.remove('hidden');
+            updateFlowView(1);
+        }
+
+        function resetToHome() {
+            currentFlowStep = 1;
+            document.getElementById('intro-screen').classList.remove('hidden');
+            document.getElementById('flow-screen').classList.add('hidden');
+            document.getElementById('report-screen').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateEmotion(type, val) {
+            emotions[type] = parseInt(val);
+            document.getElementById(`slider-${type}-val`).innerText = `${val}점`;
+        }
+
+        function addTagToCustom(text) {
+            const input = document.getElementById('input-custom-activity');
+            input.value = text;
+        }
+
+        // Slider Flow View Update
+        function updateFlowView(step) {
+            currentFlowStep = step;
+
+            const container = document.getElementById('slide-container');
+            const offset = -(step - 1) * 100;
+            container.style.transform = `translateX(${offset}%)`;
+
+            const cards = document.querySelectorAll('.slide-card');
+            cards.forEach((card, idx) => {
+                if (idx === step - 1) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+
+            document.getElementById('flow-step-text').innerText = `STEP ${step} / ${totalFlowSteps}`;
+            const titles = [
+                '주변 지원군', '시간 및 상황', '소통 방식/역할',
+                '사용 예산', '활동 카테고리', '나만의 특별 활동',
+                '감정 상태 진단', '마음 한 줄'
+            ];
+            document.getElementById('flow-title-text').innerText = titles[step - 1];
+
+            const percent = (step / totalFlowSteps) * 100;
+            document.getElementById('flow-progress').style.width = `${percent}%`;
+
+            const prevBtn = document.getElementById('btn-flow-prev');
+            const nextText = document.getElementById('btn-next-text');
+
+            if (step === 1) {
+                prevBtn.style.visibility = 'hidden';
+            } else {
+                prevBtn.style.visibility = 'visible';
+            }
+
+            if (step === totalFlowSteps) {
+                nextText.innerText = '리포트 생성';
+            } else {
+                nextText.innerText = '다음';
+            }
+        }
+
+        function nextFlowStep() {
+            if (currentFlowStep < totalFlowSteps) {
+                updateFlowView(currentFlowStep + 1);
+            } else {
+                generateReport();
+            }
+        }
+
+        function prevFlowStep() {
+            if (currentFlowStep > 1) {
+                updateFlowView(currentFlowStep - 1);
+            }
+        }
+
+        // Scoring Algorithm Engine
+        function generateReport() {
+            const supports = Array.from(document.querySelectorAll('input[name="q_support"]:checked')).map(cb => cb.value);
+            const time = document.querySelector('input[name="q_time"]:checked')?.value || 'after_school';
+            const role = document.querySelector('input[name="q_role"]:checked')?.value || 'talker';
+            const budget = parseInt(document.querySelector('input[name="q_budget"]:checked')?.value || '5000');
+            const categories = Array.from(document.querySelectorAll('input[name="q_category"]:checked')).map(cb => cb.value);
+            const customAct = document.getElementById('input-custom-activity').value.trim();
+            const emotionNote = document.getElementById('input-emotion-note').value.trim();
+
+            let scoredList = activityDB.map(act => {
+                let score = 55;
+
+                if (categories.includes(act.category)) score += 20;
+                if (emotions.anger > 50 && (act.id === 'karaoke' || act.id === 'spicy_food' || act.id === 'sports_sweat')) score += 15;
+                if (emotions.sadness > 50 && (act.id === 'family_drive' || act.id === 'doodle_journal')) score += 15;
+
+                if (act.cost > budget && budget < 15000) score -= 15;
+
+                return {
+                    ...act,
+                    finalScore: Math.min(Math.max(score, 40), 98)
+                };
+            });
+
+            if (customAct !== '') {
+                scoredList.unshift({
+                    id: 'custom_pick',
+                    title: `[내가 입력한 맞춤 활동] ${customAct}`,
+                    iconClass: 'fa-solid fa-star',
+                    category: 'custom',
+                    cost: budget,
+                    desc: '직접 실행해보고 싶다고 작성한 원픽 활동입니다. 오늘 이 일부터 먼저 시도해보세요.',
+                    tag: '#맞춤원픽',
+                    finalScore: 99
+                });
+            }
+
+            scoredList.sort((a, b) => b.finalScore - a.finalScore);
+
+            document.getElementById('report-total-score').innerText = `${scoredList[0].finalScore}점`;
+
+            const noteCard = document.getElementById('report-user-note-card');
+            if (emotionNote !== '') {
+                document.getElementById('report-user-note-text').innerText = `"${emotionNote}"`;
+                noteCard.classList.remove('hidden');
+            } else {
+                noteCard.classList.add('hidden');
+            }
+
+            const highestEmotion = Object.keys(emotions).reduce((a, b) => emotions[a] > emotions[b] ? a : b);
+            const msgEl = document.getElementById('report-comfort-msg');
+
+            if (highestEmotion === 'anger') {
+                msgEl.innerText = '치밀어 오르는 분노와 배신감은 너무나 자연스러운 반응입니다. 이 감정을 스스로를 자책하는 데 쓰지 말고, 소리 지르거나 운동하는 발산 활동으로 풀어보세요.';
+            } else if (highestEmotion === 'sadness') {
+                msgEl.innerText = '마음이 아프고 슬픈 것은 당신이 결코 부족해서가 아닙니다. 맛있는 음식을 먹거나 나를 아껴주는 주변 사람들과 함께 시간을 보내며 마음을 다독여주세요.';
+            } else {
+                msgEl.innerText = '아무것도 하기 싫은 무기력함이 느껴질 때는 무리하지 마세요. 스마트폰을 잠시 내려놓고 푹 자거나 가볍게 산책하는 작은 일상부터 채워나가면 됩니다.';
+            }
+
+            const container = document.getElementById('report-activities-list');
+            container.innerHTML = '';
+
+            scoredList.slice(0, 4).forEach((item, idx) => {
+                const cardHtml = `
+                    <div class="glass-card p-4 rounded-2xl border border-mobbin-border flex items-center justify-between space-x-3">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-mobbin-pill text-mobbin-neonBlue flex items-center justify-center flex-shrink-0 mt-0.5 border border-mobbin-border text-base">
+                                <i class="${item.iconClass}"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-[10px] px-2 py-0.5 rounded-md font-bold bg-blue-500/20 text-mobbin-neonBlue border border-blue-500/30">TOP ${idx + 1}</span>
+                                    <span class="text-[10px] text-sky-300 font-semibold">${item.tag}</span>
+                                </div>
+                                <h4 class="font-bold text-xs sm:text-sm text-white mt-1">${item.title}</h4>
+                                <p class="text-[11px] text-mobbin-softText mt-0.5 leading-snug">${item.desc}</p>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0 pl-2">
+                            <span class="text-[9px] text-mobbin-softText block">회복점수</span>
+                            <span class="text-base font-black text-mobbin-neonBlue">${item.finalScore}점</span>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+
+            document.getElementById('flow-screen').classList.add('hidden');
+            document.getElementById('report-screen').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function copyShareLink() {
+            const tempInput = document.createElement("input");
+            tempInput.value = window.location.href;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            showToast("링크가 클립보드에 복사되었습니다!");
+        }
+
+        function copySourceCode() {
+            const sourceCode = document.documentElement.outerHTML;
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = "<!DOCTYPE html>\n" + sourceCode;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempTextArea);
+
+            const btnText = document.getElementById("copy-code-btn-text");
+            if (btnText) {
+                const originalText = btnText.innerText;
+                btnText.innerText = "복사 완료!";
+                setTimeout(() => {
+                    btnText.innerText = originalText;
+                }, 2000);
+            }
+
+            showToast("전체 HTML 코드가 클립보드에 복사되었습니다!");
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toast-message");
+            const toastText = document.getElementById("toast-text");
+            if (!toast || !toastText) return;
+
+            toastText.innerText = message;
+            toast.classList.remove("opacity-0", "pointer-events-none");
+            toast.classList.add("opacity-100");
+
+            setTimeout(() => {
+                toast.classList.remove("opacity-100");
+                toast.classList.add("opacity-0", "pointer-events-none");
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
